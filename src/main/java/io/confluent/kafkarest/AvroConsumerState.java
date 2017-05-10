@@ -16,11 +16,10 @@
 
 package io.confluent.kafkarest;
 
-import com.fasterxml.jackson.databind.JsonNode;
-
 import java.util.Properties;
 
-import io.confluent.kafka.serializers.KafkaAvroDecoder;
+import com.fasterxml.jackson.databind.JsonNode;
+
 import io.confluent.kafkarest.converters.AvroConverter;
 import io.confluent.kafkarest.entities.AvroConsumerRecord;
 import kafka.javaapi.consumer.ConsumerConnector;
@@ -42,9 +41,8 @@ public class AvroConsumerState extends ConsumerState<Object, Object, JsonNode, J
                            ConsumerConnector consumer) {
     super(config, instanceId, consumer);
     Properties props = new Properties();
-    props.setProperty("schema.registry.url",
-                      config.getString(KafkaRestConfig.SCHEMA_REGISTRY_URL_CONFIG));
-    decoder = new KafkaAvroDecoder(new VerifiableProperties(props));
+    props.setProperty("schema.registry.url", config.getString(KafkaRestConfig.SCHEMA_REGISTRY_URL_CONFIG));
+    decoder = new EcoKafkaAvroDecoder(new VerifiableProperties(props));    
   }
 
   @Override
