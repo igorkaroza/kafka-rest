@@ -16,11 +16,10 @@
 
 package io.confluent.kafkarest;
 
-import com.fasterxml.jackson.databind.JsonNode;
-
 import java.util.Properties;
 
-import io.confluent.kafka.serializers.KafkaAvroDecoder;
+import com.fasterxml.jackson.databind.JsonNode;
+
 import io.confluent.kafkarest.converters.AvroConverter;
 import io.confluent.kafkarest.entities.AvroConsumerRecord;
 import kafka.javaapi.consumer.ConsumerConnector;
@@ -33,42 +32,42 @@ import kafka.utils.VerifiableProperties;
  */
 public class AvroConsumerState extends ConsumerState<Object, Object, JsonNode, JsonNode> {
 
-  // Note that this could be a static variable and shared, but that causes tests to break in
-  // subtle ways because it causes state to be shared across tests, but only for the consumer.
-  private Decoder<Object> decoder = null;
+    // Note that this could be a static variable and shared, but that causes tests to break in
+    // subtle ways because it causes state to be shared across tests, but only for the consumer.
+    private Decoder<Object> decoder = null;
 
-  public AvroConsumerState(KafkaRestConfig config,
-                           ConsumerInstanceId instanceId,
-                           ConsumerConnector consumer) {
-    super(config, instanceId, consumer);
-    Properties props = new Properties();
-    props.setProperty("schema.registry.url",
-                      config.getString(KafkaRestConfig.SCHEMA_REGISTRY_URL_CONFIG));
-    decoder = new KafkaAvroDecoder(new VerifiableProperties(props));
-  }
+    public AvroConsumerState(KafkaRestConfig config,
+            ConsumerInstanceId instanceId,
+            ConsumerConnector consumer) {
+        super(config, instanceId, consumer);
+        Properties props = new Properties();
+        props.setProperty("schema.registry.url",
+                config.getString(KafkaRestConfig.SCHEMA_REGISTRY_URL_CONFIG));
+        decoder = new EcoKafkaAvroDecoder(new VerifiableProperties(props));
+    }
 
-  @Override
-  protected Decoder<Object> getKeyDecoder() {
-    return decoder;
-  }
+    @Override
+    protected Decoder<Object> getKeyDecoder() {
+        return decoder;
+    }
 
-  @Override
-  protected Decoder<Object> getValueDecoder() {
-    return decoder;
-  }
+    @Override
+    protected Decoder<Object> getValueDecoder() {
+        return decoder;
+    }
 
-  @Override
-  public ConsumerRecordAndSize<JsonNode, JsonNode> createConsumerRecord(
-      MessageAndMetadata<Object, Object> msg) {
-    AvroConverter.JsonNodeAndSize keyNode = AvroConverter.toJson(msg.key());
-    AvroConverter.JsonNodeAndSize valueNode = AvroConverter.toJson(msg.message());
-    return new ConsumerRecordAndSize<>(
-            new AvroConsumerRecord(msg.topic(),
-                                   keyNode.json,
-                                   valueNode.json,
-                                   msg.partition(),
-                                   msg.offset()),
-            keyNode.size + valueNode.size
-    );
-  }
+    @Override
+    public ConsumerRecordAndSize<JsonNode, JsonNode> createConsumerRecord(
+            MessageAndMetadata<Object, Object> msg) {
+        AvroConverter.JsonNodeAndSize keyNode = AvroConverter.toJson(msg.key());
+        AvroConverter.JsonNodeAndSize valueNode = AvroConverter.toJson(msg.message());
+        return new ConsumerRecordAndSize<>(
+                new AvroConsumerRecord(msg.topic(),
+                        keyNode.json,
+                        valueNode.json,
+                        msg.partition(),
+                        msg.offset()),
+                keyNode.size + valueNode.size
+                );
+    }
 }
