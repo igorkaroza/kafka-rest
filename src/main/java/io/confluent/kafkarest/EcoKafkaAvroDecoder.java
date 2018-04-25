@@ -1,8 +1,10 @@
 package io.confluent.kafkarest;
 
 import java.nio.ByteBuffer;
+import java.util.Map;
 
 import org.apache.kafka.common.errors.SerializationException;
+import org.apache.kafka.common.serialization.Deserializer;
 
 import io.confluent.kafka.schemaregistry.client.SchemaRegistryClient;
 import io.confluent.kafka.serializers.AbstractKafkaAvroDeserializer;
@@ -11,7 +13,7 @@ import kafka.serializer.Decoder;
 import kafka.serializer.StringDecoder;
 import kafka.utils.VerifiableProperties;
 
-public class EcoKafkaAvroDecoder extends AbstractKafkaAvroDeserializer implements Decoder<Object> {
+public class EcoKafkaAvroDecoder extends AbstractKafkaAvroDeserializer implements Decoder<Object>,  Deserializer<Object> {
 
     protected VerifiableProperties props;
 
@@ -31,6 +33,16 @@ public class EcoKafkaAvroDecoder extends AbstractKafkaAvroDeserializer implement
     }
 
     @Override
+    public void configure(Map<String, ?> configs, boolean isKey) {
+        configure(new KafkaAvroDeserializerConfig(props.props()));
+    }
+
+    @Override
+    public Object deserialize(String topic, byte[] data) {
+        return fromBytes(data);
+    }
+
+    @Override
     public Object fromBytes(byte[] bytes) {
         Object decoded  = null;
 
@@ -47,5 +59,10 @@ public class EcoKafkaAvroDecoder extends AbstractKafkaAvroDeserializer implement
         }
 
         return decoded;
+    }
+
+    @Override
+    public void close() {
+
     }
 }

@@ -16,12 +16,6 @@
 
 package io.confluent.kafkarest.v2;
 
-import org.apache.kafka.clients.consumer.Consumer;
-import org.apache.kafka.clients.consumer.KafkaConsumer;
-import org.apache.kafka.common.TopicPartition;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -39,8 +33,17 @@ import java.util.concurrent.atomic.AtomicInteger;
 
 import javax.ws.rs.core.Response;
 
+import org.apache.kafka.clients.consumer.Consumer;
+import org.apache.kafka.clients.consumer.KafkaConsumer;
+import org.apache.kafka.common.TopicPartition;
+import org.apache.kafka.common.serialization.ByteArrayDeserializer;
+import org.apache.kafka.common.serialization.Deserializer;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import io.confluent.kafkarest.ConsumerInstanceId;
 import io.confluent.kafkarest.ConsumerWorkerReadCallback;
+import io.confluent.kafkarest.EcoKafkaAvroDecoder;
 import io.confluent.kafkarest.Errors;
 import io.confluent.kafkarest.KafkaRestConfig;
 import io.confluent.kafkarest.Time;
@@ -60,6 +63,7 @@ import io.confluent.kafkarest.entities.TopicPartitionOffsetMetadata;
 import io.confluent.rest.exceptions.RestException;
 import io.confluent.rest.exceptions.RestNotFoundException;
 import io.confluent.rest.exceptions.RestServerErrorException;
+import kafka.utils.VerifiableProperties;
 
 /**
  * Manages consumer instances by mapping instance IDs to consumer objects, processing read requests,
@@ -181,28 +185,22 @@ public class KafkaConsumerManager {
           config.getString(KafkaRestConfig.SCHEMA_REGISTRY_URL_CONFIG)
       );
 
+      Deserializer<?> keyValueDeserializer = null;
+
       switch (instanceConfig.getFormat()) {
         case AVRO:
-          props.put("key.deserializer", "io.confluent.kafka.serializers.KafkaAvroDeserializer");
-          props.put("value.deserializer", "io.confluent.kafka.serializers.KafkaAvroDeserializer");
+          keyValueDeserializer = new EcoKafkaAvroDecoder(new VerifiableProperties(props));
           break;
         case JSON:
         case BINARY:
         default:
-          props.put(
-              "key.deserializer",
-              "org.apache.kafka.common.serialization.ByteArrayDeserializer"
-          );
-          props.put(
-              "value.deserializer",
-              "org.apache.kafka.common.serialization.ByteArrayDeserializer"
-          );
+            keyValueDeserializer = new ByteArrayDeserializer();
       }
 
       Consumer consumer = null;
       try {
         if (consumerFactory == null) {
-          consumer = new KafkaConsumer(props);
+          consumer = new KafkaConsumer(props, keyValueDeserializer, keyValueDeserializer);
         } else {
           consumer = consumerFactory.createConsumer(props);
         }
